@@ -38,12 +38,12 @@ type Cinema struct {
 	} `json:"docs"`
 }
 
-func Request(name string) (film string, err error) {
+func Request(name string) (film string, picURL string, err error) {
 	escapedName := url.QueryEscape(name)
 	apiURL := fmt.Sprintf("https://api.kinopoisk.dev/v1.4/movie/search?page=1&limit=1&query=%s", escapedName)
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("ошибка создания запроса: %v", err)
+		return "", "", fmt.Errorf("ошибка создания запроса: %v", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -51,23 +51,23 @@ func Request(name string) (film string, err error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("ошибка при отправке запроса: %v", err)
+		return "", "", fmt.Errorf("ошибка при отправке запроса: %v", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", fmt.Errorf("ошибка при чтении ответа: %v", err)
+		return "", "", fmt.Errorf("ошибка при чтении ответа: %v", err)
 	}
 
 	var cinema Cinema
 	err = json.Unmarshal(body, &cinema)
 	if err != nil {
-		return "", fmt.Errorf("ошибка при разборе JSON: %v", err)
+		return "", "", fmt.Errorf("ошибка при разборе JSON: %v", err)
 	}
 
 	if len(cinema.Docs) == 0 {
-		return "", errors.New("фильм не найден")
+		return "", "", errors.New("фильм не найден")
 	}
 
 	info := cinema.Docs[0]
@@ -127,7 +127,7 @@ func Request(name string) (film string, err error) {
 	sb.WriteString("\n")
 
 	sb.WriteString(fmt.Sprintf("IMDb: %.1f КП: %.1f\n", rating.Imdb, rating.Kp))
-	sb.WriteString(fmt.Sprintf("URL: %v\n", backdrop.URL))
-
-	return sb.String(), nil
+	// sb.WriteString(fmt.Sprintf("URL: %v\n", backdrop.URL))
+	//fmt.Print(string(body))
+	return sb.String(), backdrop.URL, nil
 }
