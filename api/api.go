@@ -7,10 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/luzhnov-aleksei/kinobot/config"
 )
 
 type Cinema struct {
@@ -39,6 +38,10 @@ type Cinema struct {
 }
 
 func Request(name string) (film string, picURL string, err error) {
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		return "", "", errors.New("переменная окружения API_KEY не задана")
+	}
 	escapedName := url.QueryEscape(name)
 	apiURL := fmt.Sprintf("https://api.kinopoisk.dev/v1.4/movie/search?page=1&limit=1&query=%s", escapedName)
 	req, err := http.NewRequest("GET", apiURL, nil)
@@ -47,7 +50,7 @@ func Request(name string) (film string, picURL string, err error) {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-API-KEY", config.ApiKey)
+	req.Header.Set("X-API-KEY", apiKey)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

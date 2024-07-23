@@ -3,15 +3,20 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/luzhnov-aleksei/kinobot/api"
-	"github.com/luzhnov-aleksei/kinobot/config"
 )
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(config.BotKey)
+	botKey := os.Getenv("BOT_KEY")
+	if botKey == "" {
+		log.Panic("Переменная окружения BotKey не задана")
+	}
+
+	bot, err := tgbotapi.NewBotAPI(botKey)
 	if err != nil {
 		log.Panic(err)
 	}
