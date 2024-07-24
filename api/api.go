@@ -14,6 +14,7 @@ import (
 
 type Cinema struct {
 	Docs []struct {
+		ID               uint32 `json:"id"`
 		Name             string `json:"name"`
 		Year             uint16 `json:"year"`
 		TypeNumber       int    `json:"typeNumber"`
@@ -57,6 +58,11 @@ func Request(name string) (film string, picURL string, err error) {
 		return "", "", fmt.Errorf("ошибка при отправке запроса: %v", err)
 	}
 	defer res.Body.Close()
+
+	// Проверка на статус код 403
+	if res.StatusCode == http.StatusForbidden {
+		return "", "", errors.New("закончился лимит на сегодня, возвращайтесь завтра")
+	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -128,9 +134,10 @@ func Request(name string) (film string, picURL string, err error) {
 		sb.WriteString("Описание отсутствует или слишком длинное")
 	}
 	sb.WriteString("\n")
-
 	sb.WriteString(fmt.Sprintf("IMDb: %.1f КП: %.1f\n", rating.Imdb, rating.Kp))
-	// sb.WriteString(fmt.Sprintf("URL: %v\n", backdrop.URL))
-	//fmt.Print(string(body))
+	filmURL := fmt.Sprintf("<a href=\"https://www.kinopoisk.ru/film/%d/\">Смотреть подробнее</a>\n",
+		info.ID)
+	sb.WriteString(filmURL)
+	// fmt.Println(string(body))
 	return sb.String(), backdrop.URL, nil
 }

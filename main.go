@@ -55,14 +55,24 @@ func main() {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 					bot.Send(msg)
 				} else {
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, film)
-					bot.Send(msg)
-					if imageURL != "" {
-						file := tgbotapi.FileURL(imageURL)
-						photo := tgbotapi.NewPhoto(update.Message.Chat.ID, file)
-						bot.Send(photo)
-					}
+					// сборка сообщения
+					photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageURL))
+					photo.Caption = film
+					photo.ParseMode = "HTML"
 
+					media := []interface{}{
+						photo,
+					}
+					mediaGroup := tgbotapi.MediaGroupConfig{
+						ChatID: update.Message.Chat.ID,
+						Media:  media,
+					}
+					_, err := bot.SendMediaGroup(mediaGroup)
+					if err != nil {
+						text := fmt.Sprintf("Произошла ошибка: %s", err)
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+						bot.Send(msg)
+					}
 				}
 			}
 		}
