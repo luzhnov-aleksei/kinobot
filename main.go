@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/luzhnov-aleksei/kinobot/api"
+	"github.com/luzhnov-aleksei/kinobot/limiter"
 )
 
 func main() {
@@ -32,11 +33,23 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil {
+			userID := update.Message.From.ID
+			userName := update.Message.From.FirstName
+
+			if userName == "" {
+				userName = "друг"
+			}
+
+			if !limiter.CanSendMessage(userID) {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+					"Вы превысили лимит сообщений на сегодня. Попробуйте снова завтра.")
+				bot.Send(msg)
+				continue
+			}
+
+			limiter.IncrementMessageCount(userID)
+
 			if update.Message.Text == "/start" {
-				userName := update.Message.From.FirstName
-				if userName == "" {
-					userName = "друг"
-				}
 				var sb strings.Builder
 				sb.WriteString(fmt.Sprintf("Привет, %s.\n", userName))
 				sb.WriteString("Это бот помощник для создания списка твоих любимых фильмов\n")
