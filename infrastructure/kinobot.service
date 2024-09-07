@@ -1,0 +1,20 @@
+[Unit]
+Description=Kinobot telegram bot
+After=network.target
+
+[Service]
+Type=simple
+User=kinobot
+Group=kinobot
+MemoryAccounting=yes
+MemoryHigh=100M
+MemoryMax=200M
+CPUAccounting=yes
+CPUQuota=20%
+
+Environment=BOT_KEY="TELEGRAM_BOT_KEY"
+Environment=API_KEY="KINOPOISK_KEY
+ExecStart=/opt/kinobot/bin/kinobot
+
+[Install]
+WantedBy=multi-user.target
