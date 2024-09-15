@@ -64,7 +64,7 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(button))
 	}
 
-	// Отправляем сообщение с выбором фильма
+	// Отправляем сообщение с выбором фильмов
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выберите фильм:")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(buttons...)
 	sentMsg, _ := bot.Send(msg)
