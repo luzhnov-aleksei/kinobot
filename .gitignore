@@ -1,3 +1,6 @@
 *.DS_Store
 config/
 response.json
+*.DS_Store
+config/
+response.json

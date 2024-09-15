@@ -7,3 +7,5 @@ plugins
 user_trunk.yaml
 user.yaml
 tmp
+key_github_ssh
+key_github_ssh.pub
