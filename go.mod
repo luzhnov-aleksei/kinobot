@@ -1,4 +1,4 @@
-module github.com/luzhnov-aleksei/kinobot_otus
+module github.com/luzhnov-aleksei/kinobot
 
 go 1.22.5
 

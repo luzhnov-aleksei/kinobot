@@ -7,38 +7,26 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/luzhnov-aleksei/kinobot_otus/api"
-	"github.com/luzhnov-aleksei/kinobot_otus/limiter"
+	"github.com/luzhnov-aleksei/kinobot/limiter"
+	"github.com/luzhnov-aleksei/kinobot/movies"
 )
 
-func BotAuthorization(botKey string) (*tgbotapi.BotAPI, error) {
+func main() {
+	botKey := os.Getenv("BOT_KEY")
 	if botKey == "" {
-		return nil, fmt.Errorf("переменная окружения BotKey не задана")
+		log.Fatal("BOT_KEY environment variable is not set")
 	}
 
 	bot, err := tgbotapi.NewBotAPI(botKey)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to authorize bot. Error: %v. This might be due to VPN issues.", err)
 	}
 
-	return bot, nil
-}
-
-func main() {
-	botKey := os.Getenv("BOT_KEY")
-
-	bot, err := BotAuthorization(botKey)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bot.Debug = false // потом врубить
-
+	bot.Debug = false
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
-
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
@@ -54,7 +42,9 @@ func main() {
 			if !limiter.CanSendMessage(userID) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Вы превысили лимит сообщений на сегодня. Попробуйте снова завтра.")
-				bot.Send(msg)
+				if _, err := bot.Send(msg); err != nil {
+					log.Println("Ошибка при отправке сообщения:", err)
+				}
 				continue
 			}
 
@@ -62,7 +52,9 @@ func main() {
 
 			// Общая часть сообщения
 			commonMsg := "🤖 Это кинобот-помощник для создания списка фильмов и сериалов, которые ты планируешь посмотреть.\n\n" +
-				"✏️ Просто напиши боту название фильма, и он выдаст информацию о нем.\n\n" +
+				"✏️ Просто напиши боту запрос, выбери нужный фильм и бот выдаст информацию о нем.\n\n" +
+				"🔎 Поиск работает по названию, жанру, году. Также можно это комбинировать\n\n" +
+				"📽️ Бот может искать всё, что есть на Кинопоиске: фильмы, мультфильмы, сериалы, аниме и т.д.\n\n" +
 				"📝 Личку бота можно использовать как записную книгу с фильмами.\n\n" +
 				"💬 Или добавь бота в любой чат, дай ему админку, и он будет присылать туда фильмы по вашим запросам👍\n\n" +
 				"🤔 Если возникнут вопросы или проблемы с ботом, то напиши разработчику @luzhnov_aleksei"
@@ -75,41 +67,41 @@ func main() {
 			} else if update.Message.Text == "/help" {
 				msgText = commonMsg
 			} else {
-				// Если не /start и не /help, запрос к API
-				film, imageURL, err := api.Request(update.Message.Text)
+				// Отправляем анимацию загрузки
+				animation := tgbotapi.NewAnimation(update.Message.Chat.ID, tgbotapi.FileURL("https://media1.tenor.com/m/RVvnVPK-6dcAAAAd/reload-cat.gif"))
+				sentAnimation, err := bot.Send(animation)
 				if err != nil {
-					text := fmt.Sprintf("Произошла ошибка: %s", err)
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-					bot.Send(msg)
-					continue
+					log.Printf("Не удалось отправить GIF: %v", err)
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "🔄 Идет поиск... Пожалуйста, подождите.")
+					if _, err := bot.Send(msg); err != nil {
+						log.Println("Ошибка при отправке сообщения:", err)
+					}
+					movies.HandleMovieSearch(bot, &update)
+					deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, sentAnimation.MessageID)
+					if _, err := bot.Send(deleteMsg); err != nil {
+						log.Println("Ошибка при отправке сообщения:", err)
+					}
+				} else {
+					movies.HandleMovieSearch(bot, &update)
+					deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, sentAnimation.MessageID)
+					if _, err := bot.Send(deleteMsg); err != nil {
+						log.Println("Ошибка при отправке сообщения:", err)
+					}
 				}
-
-				// Отправка информации о фильме
-				photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(imageURL))
-				photo.Caption = film
-				photo.ParseMode = "HTML"
-
-				media := []interface{}{photo}
-				mediaGroup := tgbotapi.MediaGroupConfig{
-					ChatID: update.Message.Chat.ID,
-					Media:  media,
-				}
-
-				_, err = bot.SendMediaGroup(mediaGroup)
-				if err != nil {
-					text := fmt.Sprintf("Произошла ошибка в сборке сообщения: %s", err)
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-					bot.Send(msg)
-				}
-
 				continue
 			}
 
-			// Отправка сообщения
+			// Отправка сообщения для /start или /help
 			if msgText != "" {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, strings.TrimSpace(msgText))
-				bot.Send(msg)
+				if _, err := bot.Send(msg); err != nil {
+					log.Println("Ошибка при отправке сообщения:", err)
+				}
 			}
+
+		} else if update.CallbackQuery != nil {
+			// Обработка выбора фильма из списка
+			movies.HandleMovieSelection(bot, &update)
 		}
 	}
 }
