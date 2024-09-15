@@ -8,10 +8,14 @@ import (
 	"github.com/luzhnov-aleksei/kinobot/api"
 )
 
-var userMovieSelections = make(map[int64][]api.Cinema)
+var UserMovieSelections = make(map[int64][]api.Cinema)
 var userPreviousMessages = make(map[int64]int)
 var userPreviousLists = make(map[int64]int)
 
+// URL API можно передать как параметр или установить глобально
+const apiURL = "https://api.kinopoisk.dev/v1.4/movie/search"
+
+// Обработчик поиска фильмов
 func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	userID := update.Message.From.ID
 
@@ -32,7 +36,7 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	}
 
 	// Получаем список фильмов по запросу
-	movies, err := api.RequestMovies(update.Message.Text)
+	movies, err := api.RequestMovies(apiURL, update.Message.Text)
 	if err != nil {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Произошла ошибка: %s", err))
 		if _, err := bot.Send(msg); err != nil {
@@ -46,10 +50,11 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 		if _, err := bot.Send(msg); err != nil {
 			log.Println("Ошибка при отправке сообщения:", err)
 		}
+		return
 	}
 
 	// Сохраняем список фильмов
-	userMovieSelections[userID] = movies
+	UserMovieSelections[userID] = movies
 	var countryName string
 
 	// Формируем inline-кнопки

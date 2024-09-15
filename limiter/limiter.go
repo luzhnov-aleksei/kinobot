@@ -5,7 +5,7 @@ import (
 )
 
 // лимит запросов в день от пользователя.
-const maxMessagesPerDay = 50
+const maxMessagesPerDay = 20
 
 type UserMessageInfo struct {
 	Count   int

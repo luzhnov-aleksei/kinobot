@@ -46,14 +46,14 @@ func (a ByKpRating) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByKpRating) Less(i, j int) bool { return a[i].Rating.Kp > a[j].Rating.Kp }
 
 // Запрос списка фильмов по названию
-func RequestMovies(query string) ([]Cinema, error) {
+func RequestMovies(apiURL string, query string) ([]Cinema, error) {
 	apiKey := os.Getenv("API_KEY")
 	if apiKey == "" {
 		return nil, errors.New("переменная окружения API_KEY не задана")
 	}
 	escapedName := url.QueryEscape(query)
-	apiURL := fmt.Sprintf("https://api.kinopoisk.dev/v1.4/movie/search?page=1&limit=8&query=%s", escapedName)
-	req, err := http.NewRequest("GET", apiURL, nil)
+	fullURL := fmt.Sprintf("%s?page=1&limit=8&query=%s", apiURL, escapedName)
+	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка создания запроса: %v", err)
 	}

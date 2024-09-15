@@ -15,7 +15,7 @@ func HandleMovieSelection(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	selectedMovieID := update.CallbackQuery.Data
 
 	// Получаем сохранённый список фильмов
-	movies, exists := userMovieSelections[userID]
+	movies, exists := UserMovieSelections[userID]
 	if !exists {
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Произошла ошибка: список фильмов не найден.\nПопробуйте ввести новый запрос.")
 		if _, err := bot.Send(msg); err != nil {
