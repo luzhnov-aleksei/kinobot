@@ -67,6 +67,23 @@ func RequestMovies(apiURL string, query string) ([]Cinema, error) {
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode != http.StatusOK {
+		// Обработка ошибок
+		var errorMsg struct {
+			StatusCode int    `json:"statusCode"`
+			Message    string `json:"message"`
+			Error      string `json:"error"`
+		}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при чтении тела ответа об ошибке: %v", err)
+		}
+		if err := json.Unmarshal(body, &errorMsg); err != nil {
+			return nil, fmt.Errorf("ошибка при разборе JSON ошибки: %v", err)
+		}
+		return nil, fmt.Errorf("API вернул ошибку: %d - %s", errorMsg.StatusCode, errorMsg.Message)
+	}
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при чтении ответа: %v", err)

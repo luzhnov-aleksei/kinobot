@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestUserMovieSelections(t *testing.T) {
 	movies.UserMovieSelections = make(map[int64][]api.Cinema)
 

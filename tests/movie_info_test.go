@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestTypeFilm(t *testing.T) {
 	assert.Equal(t, "Фильм", movies.TypeFilm(1))
 	assert.Equal(t, "Сериал", movies.TypeFilm(2))
@@ -18,13 +17,12 @@ func TestTypeFilm(t *testing.T) {
 	assert.Equal(t, "", movies.TypeFilm(0))
 }
 
-
 func TestFormatMovieInfo(t *testing.T) {
 	testMovie := &api.Cinema{
 		ID:               1,
 		Name:             "Тестовый фильм",
 		Year:             2024,
-		TypeNumber:       1, 
+		TypeNumber:       1,
 		AgeRating:        16,
 		Description:      "Длинное описание фильма",
 		ShortDescription: "Короткое описание",
@@ -68,6 +66,7 @@ func TestFormatMovieInfo(t *testing.T) {
 	assert.Contains(t, filmInfo, "Длинное описание фильма")
 	assert.Equal(t, "https://example.com/poster.jpg", picURL)
 }
+
 // фильм не найден
 func TestFormatMovieInfo_EmptyMovie(t *testing.T) {
 	movie := api.Cinema{}
