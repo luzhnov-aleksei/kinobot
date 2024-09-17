@@ -19,7 +19,7 @@ func HandleMovieSelection(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	if !exists {
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Произошла ошибка: список фильмов не найден.\nПопробуйте ввести новый запрос.")
 		if _, err := bot.Send(msg); err != nil {
-			log.Println("Ошибка при отправке сообщения:", err)
+			log.Println("Список фильмов не найден, ошибка при отправке сообщения:", err)
 		}
 		return
 	}
@@ -39,7 +39,7 @@ func HandleMovieSelection(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 			text := fmt.Sprintf("Произошла ошибка: %s", err)
 			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text)
 			if _, err := bot.Send(msg); err != nil {
-				log.Println("Ошибка при отправке сообщения:", err)
+				log.Println("Ошибка при форматировании фильма:", err)
 			}
 			return
 		}
@@ -60,7 +60,7 @@ func HandleMovieSelection(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 			text := fmt.Sprintf("Произошла ошибка в отправке медиагруппы: %s", err)
 			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text)
 			if _, err := bot.Send(msg); err != nil {
-				log.Println("Ошибка при отправке сообщения:", err)
+				log.Println("Ошибка при отправке медиагруппы:", err)
 			}
 
 		}
@@ -68,7 +68,7 @@ func HandleMovieSelection(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	} else {
 		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Фильм не найден.")
 		if _, err := bot.Send(msg); err != nil {
-			log.Println("Ошибка при отправке сообщения:", err)
+			log.Println("Ошибка при отправке сообщения, фильм не найден:", err)
 		}
 	}
 }

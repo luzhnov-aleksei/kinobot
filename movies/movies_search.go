@@ -20,18 +20,24 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	userID := update.Message.From.ID
 
 	// Удаляем предыдущее сообщение пользователя, если оно существует
-	if msgID, ok := userPreviousMessages[userID]; ok {
+	if msgID, ok := userPreviousMessages[userID]; ok && msgID != 0 {
 		deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, msgID)
 		if _, err := bot.Request(deleteMsg); err != nil {
-			log.Println("Ошибка при удалении сообщения:", err)
+			log.Println("Ошибка при удалении предыдущего сообщения:", err)
+		} else {
+			// Обнуляем, чтобы не было повторной попытки удаления
+			userPreviousMessages[userID] = 0
 		}
 	}
 
 	// Удаляем предыдущее сообщение со списком фильмов, если оно существует
-	if listID, ok := userPreviousLists[userID]; ok {
+	if listID, ok := userPreviousLists[userID]; ok && listID != 0 {
 		deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, listID)
 		if _, err := bot.Request(deleteMsg); err != nil {
-			log.Println("Ошибка при удалении сообщения:", err)
+			log.Println("Ошибка при удалении сообщения со списком фильмов:", err)
+		} else {
+			// Обнуляем, чтобы не было повторной попытки удаления
+			userPreviousLists[userID] = 0
 		}
 	}
 
@@ -40,7 +46,7 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	if err != nil {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Произошла ошибка: %s", err))
 		if _, err := bot.Send(msg); err != nil {
-			log.Println("Ошибка при отправке сообщения:", err)
+			log.Println("Ошибка при получении списка фильмов:", err)
 		}
 		return
 	}
@@ -48,7 +54,7 @@ func HandleMovieSearch(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	if len(movies) == 0 {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Фильм не найден, попробуйте другой запрос")
 		if _, err := bot.Send(msg); err != nil {
-			log.Println("Ошибка при отправке сообщения:", err)
+			log.Println("Фильм не найден, ошибка при отправке сообщения:", err)
 		}
 		return
 	}

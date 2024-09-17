@@ -22,9 +22,8 @@ func main() {
 		log.Fatalf("Failed to authorize bot. Error: %v. This might be due to VPN issues.", err)
 	}
 
-	bot.Debug = false
+	bot.Debug = false // Режим отладки
 	log.Printf("Authorized on account %s", bot.Self.UserName)
-
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
@@ -32,18 +31,29 @@ func main() {
 	for update := range updates {
 		if update.Message != nil {
 			userID := update.Message.From.ID
-			userName := update.Message.From.FirstName
+			firstName := update.Message.From.FirstName
+			username := update.Message.From.UserName
 
-			if userName == "" {
-				userName = "друг"
+			if firstName == "" {
+				firstName = "друг"
 			}
 
+			if username == "" {
+				username = "username отсутствует"
+			}
+
+			if update.Message.NewChatMembers != nil {
+				for _, member := range update.Message.NewChatMembers {
+					log.Printf("New user authorized: %s (@%s)", member.FirstName, member.UserName)
+				}
+			}
 			// Проверка на лимит сообщений
 			if !limiter.CanSendMessage(userID) {
+				log.Printf("Пользователь [%d] с username [@%s] превысил лимит сообщений", userID, username)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Вы превысили лимит сообщений на сегодня. Попробуйте снова завтра.")
 				if _, err := bot.Send(msg); err != nil {
-					log.Println("Ошибка при отправке сообщения:", err)
+					log.Println("Ошибка при отправке сообщения из-за лимита на пользователя:", err)
 				}
 				continue
 			}
@@ -63,39 +73,40 @@ func main() {
 
 			// Обработка команд /start и /help
 			if update.Message.Text == "/start" {
-				msgText = fmt.Sprintf("Привет, %s👋👋👋\n\n", userName) + commonMsg
+				log.Printf("/start от пользователя [%d] с username [@%s]: %s", userID, username, update.Message.Text)
+				msgText = fmt.Sprintf("Привет, %s👋👋👋\n\n", firstName) + commonMsg
 			} else if update.Message.Text == "/help" {
 				msgText = commonMsg
 			} else {
+				log.Printf("Получено сообщение от пользователя [%d] с username [@%s]: %s", userID, username, update.Message.Text)
 				// Отправляем анимацию загрузки
 				animation := tgbotapi.NewAnimation(update.Message.Chat.ID, tgbotapi.FileURL("https://media1.tenor.com/m/RVvnVPK-6dcAAAAd/reload-cat.gif"))
-				sentAnimation, err := bot.Send(animation)
+				animationMsg, err := bot.Send(animation)
 				if err != nil {
 					log.Printf("Не удалось отправить GIF: %v", err)
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "🔄 Идет поиск... Пожалуйста, подождите.")
 					if _, err := bot.Send(msg); err != nil {
-						log.Println("Ошибка при отправке сообщения:", err)
+						log.Println("Ошибка при отправке сообщения из-за отсутствия gif:", err)
 					}
 					movies.HandleMovieSearch(bot, &update)
-					deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, sentAnimation.MessageID)
-					if _, err := bot.Send(deleteMsg); err != nil {
-						log.Println("Ошибка при отправке сообщения:", err)
-					}
 				} else {
+					// Обрабатываем запрос фильма после успешной отправки GIF
 					movies.HandleMovieSearch(bot, &update)
-					deleteMsg := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, sentAnimation.MessageID)
-					if _, err := bot.Send(deleteMsg); err != nil {
-						log.Println("Ошибка при отправке сообщения:", err)
+
+					// Удаляем GIF после обработки запроса
+					deleteMessage := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, animationMsg.MessageID)
+					_, deleteErr := bot.Request(deleteMessage)
+					if deleteErr != nil {
+						log.Println("Ошибка при удалении GIF сообщения:", deleteErr)
 					}
 				}
-				continue
 			}
 
 			// Отправка сообщения для /start или /help
 			if msgText != "" {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, strings.TrimSpace(msgText))
 				if _, err := bot.Send(msg); err != nil {
-					log.Println("Ошибка при отправке сообщения:", err)
+					log.Println("Ошибка при отправке /start /help сообщения:", err)
 				}
 			}
 
